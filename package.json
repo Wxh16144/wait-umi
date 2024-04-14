@@ -23,6 +23,11 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Wxh16144/wait-umi.git"
+  },
+  "author": "Wuxh<wxh16144@qq.com>",
   "dependencies": {
     "node-fetch": "2.7.0",
     "check-more-types": "2.24.0",
