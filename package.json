@@ -1,0 +1,21 @@
+{
+  "name": "wait-umi",
+  "version": "0.0.0",
+  "description": "等待 umi 服务启动",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "ci",
+    "parallel",
+    "umijs",
+    "dumi",
+    "wait"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "private": false,
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  }
+}
