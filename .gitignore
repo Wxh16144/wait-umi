@@ -1,0 +1,10 @@
+logs
+*.log
+
+node_modules
+.vscode
+
+# lock file
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

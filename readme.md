@@ -6,12 +6,14 @@
 
 ## usage
 
+wait umi `<NPM script name that starts server> <url or port>`
+
 ```json
 {
   "scripts": {
     "start": "umi dev",
     "test:e2e": "cypress run",
-    "test": "wait-umi :8000 && test:e2e"
+    "test": "wait-umi :8001 && test:e2e"
   },
   "devDependencies": {
     "wait-umi": "*"
@@ -30,3 +32,7 @@
     "test": "wait-umi :8000 && test:e2e"
 
 ```
+
+## 参考实现
+
+- [start-server-and-test](https://github.com/bahmutov/start-server-and-test)
