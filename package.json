@@ -1,6 +1,6 @@
 {
   "name": "wait-umi",
-  "version": "0.0.0",
+  "version": "0.0.1-beta.1",
   "description": "等待 umi 服务启动",
   "scripts": {
     "start": "npx http-server -p 10123",
