@@ -22,44 +22,50 @@ const realUrl = `${url}/__umi/api/bundle-status`;
 debug('checking url %s', realUrl)
 
 debug('starting server with command %s', start)
+
 const server = execa(start, {
   shell: true,
-  stdio: ['ignore', 'inherit', 'inherit']
+  detached: true,
+  stdio: ['ignore', 'inherit'],
 });
+
+debug('server pid %s', server.pid)
 
 let serverStopped;
 
 function stopServer() {
   debug('getting child processes')
-  if (!serverStopped) {
-    serverStopped = true
-    return new Promise((resolve, reject) => {
-      psTree(server.pid, (err, children) => {
-        if (err) {
-          return reject(err)
-        }
-
-        debug('stopping child processes')
-        children.forEach(child => {
-          try {
-            process.kill(child.PID, 'SIGINT')
-          } catch (e) {
-            if (e.code === 'ESRCH') {
-              console.log(
-                `Child process ${child.PID} exited before trying to stop it`
-              )
-            } else {
-              return reject(e)
-            }
-          }
-        })
-
-        debug('stopping server')
-        server.kill()
-        resolve()
-      });
-    })
+  if (serverStopped) {
+    return Promise.resolve()
   }
+
+  serverStopped = true
+  return new Promise((resolve, reject) => {
+    psTree(server.pid, (err, children) => {
+      if (err) {
+        return reject(err)
+      }
+
+      debug('stopping child processes')
+      children.forEach(child => {
+        try {
+          process.kill(child.PID, 'SIGINT')
+        } catch (e) {
+          if (e.code === 'ESRCH') {
+            console.log(
+              `Child process ${child.PID} exited before trying to stop it`
+            )
+          } else {
+            return reject(e)
+          }
+        }
+      })
+
+      debug('stopping server')
+      server.kill()
+      server.on('exit', resolve);
+    });
+  })
 }
 const startTime = Date.now();
 
@@ -74,18 +80,16 @@ function check() {
       /**
        * ref: https://github.com/search?q=repo%3Aumijs%2Fumi+__umi%2Fapi%2Fbundle-status&type=code
        */
-      if (
+      return (
+        data != null &&
         typeof data === 'object' &&
         data.bundleStatus?.done &&
         (!data.mfsuBundleStatus || data.mfsuBundleStatus.done)
-      ) {
-        return true
-      }
-      return false
+      );
     })
     .catch(err => {
       return false
-    })
+    });
 }
 
 function wait() {
@@ -96,22 +100,31 @@ function wait() {
 
     server.on('close', onClose);
 
-    check()
-      .then(ready => {
-        if (ready) {
-          return resolve();
-        }
-        if (Date.now() - startTime > TIMEOUT) {
-          console.error('Umi server did not start in time')
-          return stopServer();
-        }
+    function _checkReady() {
+      return check()
+        .then(ready => {
+          if (ready) {
+            return Promise.resolve();
+          }
 
-        debug('Umi server is not ready yet, waiting...')
-        setTimeout(() => {
-          wait().then(resolve).catch(reject)
-        }, INTERVAL)
-      })
-      .catch(reject);
+          if (Date.now() - startTime > TIMEOUT) {
+            console.error('Umi server did not start in time')
+            return stopServer().finally(() => {
+              reject(new Error('Umi server did not start in time'))
+            });
+          }
+
+          debug('Umi server is not ready yet, waiting...')
+
+          return new Promise((resolve, reject) => {
+            setTimeout(() => {
+              _checkReady().then(resolve, reject);
+            }, INTERVAL)
+          });
+        })
+    }
+
+    _checkReady().then(resolve, reject);
   })
 }
 
@@ -126,11 +139,8 @@ wait()
     console.error(err);
     process.exit(1)
   })
-  .finally(() => {
-    server.removeListener('close', onClose);
-  });
 
 // 监听进程退出
 process.on('SIGINT', () => {
-  stopServer();
+  server.kill();
 });
